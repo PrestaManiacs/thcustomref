@@ -37,7 +37,7 @@ class Thcustomref extends Module
 
         parent::__construct();
 
-        $this->displayName = $this->l('Custom order reference');
+        $this->displayName = $this->l('Custom Order Reference');
         $this->description = $this->l('Fully customizable module for your order reference.');
 
         $this->ps_versions_compliancy = array('min' => '1.7', 'max' => _PS_VERSION_);
