@@ -17,7 +17,7 @@
 	<h3><i class="icon icon-info"></i> {l s='Custom order reference' mod='thcustomref'}</h3>
 	<img src="{$module_dir|escape:'html':'UTF-8'}/logo.png" id="payment-logo" class="pull-right" width="50" />
 	<p>
-		{l s='If you have any question about our module, or if you need help with your PrestaShop store, please contact us!' mod='thanaf'}
+		{l s='If you have any question about our module, or if you need help with your PrestaShop store, please contact us!' mod='thcustomref'}
 	</p>
 	<p>Our Website: <a href="https://prestamaniacs.com/" target="_blank">prestamaniacs.com</a><br />
 		We are also present on: <a href="https://addons.prestashop.com/en/244_thecon" target="_blank">addons.prestashop.com</a><br />
