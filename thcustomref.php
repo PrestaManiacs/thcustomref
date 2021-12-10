@@ -71,6 +71,8 @@ class Thcustomref extends Module
             Configuration::deleteByName($key);
         }
 
+        Configuration::deleteByName('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
+
         return parent::uninstall();
     }
 
@@ -92,7 +94,7 @@ class Thcustomref extends Module
             }
         }
 
-        $results = $this->getMaxIdOrder(true);
+        $results = Configuration::get('THCUSTOMREF_NUMBER_TO_USE') ? Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN') : $this->getMaxIdOrder(true);
 
         $value = '';
         if (Configuration::get('THCUSTOMREF_PREFIX_ENABLE')) {
@@ -189,6 +191,7 @@ class Thcustomref extends Module
                         'type' => 'select',
                         'label' => $this->l('Number to use'),
                         'name' => 'THCUSTOMREF_NUMBER_TO_USE',
+                        'desc' => $this->l('Last order id: '.$this->getMaxIdOrder()),
                         'options' => array(
                             'query' => array(
                                 array(
@@ -210,7 +213,8 @@ class Thcustomref extends Module
                         'name' => 'THCUSTOMREF_NEXT_INCREMENT_NUMBER',
                         'col' => 2,
                         'class' => 'fixed-width-xl',
-                        'required' => true
+                        Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN') ? : 'required' => true,
+                        !Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN') ? : 'desc' => $this->l('Current number: '.Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN'))
                     ),
                     array(
                         'type' => 'th_sub_title',
@@ -303,11 +307,12 @@ class Thcustomref extends Module
     protected function postProcess()
     {
         $update_value = 1;
-        $form_values = $this->getConfigFormValues();
-
         $count = 0;
-
-        $results = Tools::getValue('THCUSTOMREF_NUMBER_TO_USE') == 0 ? $this->getMaxIdOrder() : Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
+        $nr_hidden = Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
+        $nr = Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER');
+        $nr_to_use = Tools::getValue('THCUSTOMREF_NUMBER_TO_USE');
+        $last_order_id = $this->getMaxIdOrder();
+        $number = !$nr_to_use ? $last_order_id : Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
 
         if (Tools::getValue('THCUSTOMREF_PREFIX_ENABLE')) {
             $count += Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX'));
@@ -317,19 +322,22 @@ class Thcustomref extends Module
             $count += Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX'));
         }
 
-        if (!Validate::isInt(Tools::getValue('THCUSTOMREF_DIGITS_NUMBER')) || (Tools::getValue('THCUSTOMREF_DIGITS_NUMBER') < Tools::strlen($results))) {
+        if (!Validate::isInt(Tools::getValue('THCUSTOMREF_DIGITS_NUMBER')) || (Tools::getValue('THCUSTOMREF_DIGITS_NUMBER') < Tools::strlen($number))) {
             $this->_errors[] = 'Number of digits value it\'s not ok!';
+        }
+
+        if ($nr_to_use && ((!$nr_hidden && (!$nr || !Validate::isInt($nr))) || $nr_hidden && ($nr && (!Validate::isInt($nr) || $nr_hidden > $nr)))) {
+            $this->_errors[] = 'Next increment number value it\'s not ok!';
         }
 
         if (!$this->_errors) {
             if ($count + Tools::getValue('THCUSTOMREF_DIGITS_NUMBER') > 9) {
-                $this->_errors[] = 'Prefix ('.Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX')).') + suffix ('.Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX')).') + number of digits ('.Tools::getValue('THCUSTOMREF_DIGITS_NUMBER').') cannot be grather then 9';
+                $this->_errors[] = 'Prefix + suffix + number length cannot be greather then 9';
             }
         }
-        // de facut update in timp real la next increment number
-        // de verificat next increment number cand este null si exista hidden
 
         if (!$this->_errors) {
+            $form_values = $this->getConfigFormValues();
             foreach (array_keys($form_values) as $key) {
                 if ($key == 'THCUSTOMREF_DIGITS_NUMBER') {
                     if (!Validate::isInt(Tools::getValue($key)) || Tools::getValue($key) > 5) {
@@ -346,15 +354,15 @@ class Thcustomref extends Module
                         $this->_errors[] = 'Prefix cannot be empty while it is enabled';
                         $update_value = 0;
                     }
-                } else if ($key == 'THCUSTOMREF_NUMBER_TO_USE' && Tools::getValue('THCUSTOMREF_NUMBER_TO_USE') == 1) {
-                    if (!Validate::isInt(Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER')) || Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER') <= Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN')) {
-                        $this->_errors[] = 'Next increment number value can\'t be lower or equal than '.Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
+                } elseif ($key == 'THCUSTOMREF_NEXT_INCREMENT_NUMBER') {
+                    if ($nr && $last_order_id >= $nr) {
+                        $this->_errors[] = 'Next increment number value can\'t be lower or equal than last order id: '.$last_order_id;
                         $update_value = 0;
                     }
                 }
 
                 if ($update_value) {
-                    if ($key == 'THCUSTOMREF_NUMBER_TO_USE' && Tools::getValue('THCUSTOMREF_NUMBER_TO_USE') == 1) {
+                    if ($key == 'THCUSTOMREF_NEXT_INCREMENT_NUMBER' && $nr_to_use && $nr) {
                         Configuration::updateValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN', Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER'));
                     }
                     Configuration::updateValue($key, Tools::getValue($key));
@@ -376,7 +384,8 @@ class Thcustomref extends Module
             $results = $this->getMaxIdOrder(true);
 
             Media::addJsDef(array(
-                'THCUSTOMREF_LAST_ID_ORDER' => $results
+                'THCUSTOMREF_LAST_ID_ORDER' => $results,
+                'THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN' => Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN'),
             ));
         }
     }
@@ -389,11 +398,5 @@ class Thcustomref extends Module
         }
 
         return Db::getInstance()->getValue($sql);
-    }
-
-    public function setAutoIncrement($max_id)
-    {
-        $sql = 'ALTER TABLE `'._DB_PREFIX_.'orders` MODIFY `id_order` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT='.$max_id;
-        return Db::getInstance()->execute($sql);
     }
 }

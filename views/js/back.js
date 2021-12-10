@@ -16,15 +16,7 @@
 $(document).ready(function() {
     $("#module_form input")
         .change(function() {
-            let OUTPUT = '';
-            if($('#THCUSTOMREF_PREFIX_ENABLE_on').is(':checked')) {
-                OUTPUT = OUTPUT + $("input[name='THCUSTOMREF_PREFIX']").val();
-            }
-            OUTPUT = OUTPUT + String(THCUSTOMREF_LAST_ID_ORDER).padStart($("input[name='THCUSTOMREF_DIGITS_NUMBER']").val(), '0');
-            if($('#THCUSTOMREF_SUFFIX_ENABLE_on').is(':checked')) {
-                OUTPUT = OUTPUT + $("input[name='THCUSTOMREF_SUFFIX']").val();
-            }
-            $('#thcustomref_preview').html(OUTPUT);
+            handlePreview($('#THCUSTOMREF_NUMBER_TO_USE').val());
         });
 
     manageInputForms();
@@ -35,10 +27,39 @@ $(document).ready(function() {
 
     function manageInputForms() {
         let $THCUSTOMREF_NUMBER_TO_USE = $('#THCUSTOMREF_NUMBER_TO_USE');
-        if ($THCUSTOMREF_NUMBER_TO_USE.val()  == 0) {
+        let val = $THCUSTOMREF_NUMBER_TO_USE.val();
+        if (val  == 0) {
             $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_NEXT_INCREMENT_NUMBER').closest('.form-group').hide();
-        } else if ($THCUSTOMREF_NUMBER_TO_USE.val()  == 1) {
+            handlePreview(0);
+        } else if (val  == 1) {
             $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_NEXT_INCREMENT_NUMBER').closest('.form-group').show();
+            handlePreview(1);
         }
+    }
+
+    function handlePreview(parameter) {
+        let OUTPUT = '';
+        let NUMBER;
+
+        if (parameter == 1) {
+            let $select_obj = $('#THCUSTOMREF_NEXT_INCREMENT_NUMBER');
+            let val = $select_obj.val();
+            if (val.length) {
+                NUMBER = val;
+            } else {
+                NUMBER = $select_obj.closest('.form-group').find('p').text().replace('Current number: ', '').trim();
+            }
+        } else {
+            NUMBER = THCUSTOMREF_LAST_ID_ORDER;
+        }
+
+        if($('#THCUSTOMREF_PREFIX_ENABLE_on').is(':checked')) {
+            OUTPUT = OUTPUT + $("input[name='THCUSTOMREF_PREFIX']").val();
+        }
+        OUTPUT = OUTPUT + String(NUMBER).padStart($("input[name='THCUSTOMREF_DIGITS_NUMBER']").val(), '0');
+        if($('#THCUSTOMREF_SUFFIX_ENABLE_on').is(':checked')) {
+            OUTPUT = OUTPUT + $("input[name='THCUSTOMREF_SUFFIX']").val();
+        }
+        $('#thcustomref_preview').html(OUTPUT);
     }
 });
