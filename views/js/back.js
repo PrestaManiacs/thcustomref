@@ -26,4 +26,19 @@ $(document).ready(function() {
             }
             $('#thcustomref_preview').html(OUTPUT);
         });
+
+    manageInputForms();
+
+    $('#THCUSTOMREF_NUMBER_TO_USE').change(function () {
+        manageInputForms();
+    })
+
+    function manageInputForms() {
+        let $THCUSTOMREF_NUMBER_TO_USE = $('#THCUSTOMREF_NUMBER_TO_USE');
+        if ($THCUSTOMREF_NUMBER_TO_USE.val()  == 0) {
+            $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_NEXT_INCREMENT_NUMBER').closest('.form-group').hide();
+        } else if ($THCUSTOMREF_NUMBER_TO_USE.val()  == 1) {
+            $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_NEXT_INCREMENT_NUMBER').closest('.form-group').show();
+        }
+    }
 });

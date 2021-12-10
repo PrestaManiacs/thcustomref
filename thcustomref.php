@@ -183,12 +183,34 @@ class Thcustomref extends Module
                         'name' => 'THCUSTOMREF_DIGITS_NUMBER',
                         'required' => true,
                         'col' => 2,
+                        'class' => 'fixed-width-xl'
+                    ),
+                    array(
+                        'type' => 'select',
+                        'label' => $this->l('Number to use'),
+                        'name' => 'THCUSTOMREF_NUMBER_TO_USE',
+                        'options' => array(
+                            'query' => array(
+                                array(
+                                    'option_value' => 0,
+                                    'option_title' => $this->l('ID Order')
+                                ),
+                                array(
+                                    'option_value' => 1,
+                                    'option_title' => $this->l('Specified number')
+                                )
+                            ),
+                            'id' => 'option_value',
+                            'name' => 'option_title'
+                        )
                     ),
                     array(
                         'type' => 'text',
                         'label' => $this->l('Next increment number'),
                         'name' => 'THCUSTOMREF_NEXT_INCREMENT_NUMBER',
                         'col' => 2,
+                        'class' => 'fixed-width-xl',
+                        'required' => true
                     ),
                     array(
                         'type' => 'th_sub_title',
@@ -218,6 +240,7 @@ class Thcustomref extends Module
                         'label' => $this->l('Prefix'),
                         'name' => 'THCUSTOMREF_PREFIX',
                         'col' => 2,
+                        'class' => 'fixed-width-xl'
                     ),
                     array(
                         'type' => 'th_sub_title',
@@ -247,6 +270,7 @@ class Thcustomref extends Module
                         'label' => $this->l('Suffix'),
                         'name' => 'THCUSTOMREF_SUFFIX',
                         'col' => 2,
+                        'class' => 'fixed-width-xl'
                     )
                 ),
                 'submit' => array(
@@ -268,7 +292,8 @@ class Thcustomref extends Module
             'THCUSTOMREF_SUFFIX' => Tools::getValue('THCUSTOMREF_SUFFIX', Configuration::get('THCUSTOMREF_SUFFIX')),
             'THCUSTOMREF_SUFFIX_ENABLE' => Tools::getValue('THCUSTOMREF_SUFFIX_ENABLE', Configuration::get('THCUSTOMREF_SUFFIX_ENABLE')),
             'THCUSTOMREF_DIGITS_NUMBER' => Tools::getValue('THCUSTOMREF_DIGITS_NUMBER', Configuration::get('THCUSTOMREF_DIGITS_NUMBER')),
-            'THCUSTOMREF_NEXT_INCREMENT_NUMBER' => Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER', Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER'))
+            'THCUSTOMREF_NEXT_INCREMENT_NUMBER' => Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER', Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER')),
+            'THCUSTOMREF_NUMBER_TO_USE' => Tools::getValue('THCUSTOMREF_NUMBER_TO_USE', Configuration::get('THCUSTOMREF_NUMBER_TO_USE')),
         );
     }
 
@@ -281,42 +306,34 @@ class Thcustomref extends Module
         $form_values = $this->getConfigFormValues();
 
         $count = 0;
-        $count1 = 0;
+
+        $results = Tools::getValue('THCUSTOMREF_NUMBER_TO_USE') == 0 ? $this->getMaxIdOrder() : Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
+
         if (Tools::getValue('THCUSTOMREF_PREFIX_ENABLE')) {
             $count += Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX'));
-            $count1 += Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX'));
         }
 
         if (Tools::getValue('THCUSTOMREF_SUFFIX_ENABLE')) {
             $count += Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX'));
-            $count1 += Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX'));
         }
 
-        !Tools::getValue('THCUSTOMREF_DIGITS_NUMBER') ? : $count += Tools::getValue('THCUSTOMREF_DIGITS_NUMBER');
-        if ($count > 9) {
-            $this->_errors[] = 'Prefix('.Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX')).') + suffix('.Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX')).')  + digits number('.Tools::getValue('THCUSTOMREF_DIGITS_NUMBER').') value cannot be grather then 9';
+        if (!Validate::isInt(Tools::getValue('THCUSTOMREF_DIGITS_NUMBER')) || (Tools::getValue('THCUSTOMREF_DIGITS_NUMBER') < Tools::strlen($results))) {
+            $this->_errors[] = 'Number of digits value it\'s not ok!';
         }
 
-        $results = $this->getMaxIdOrder();
-
-        if ($count1 + Tools::strlen($results) > 9) {
-            $this->_errors[] = 'Prefix('.Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX')).') + suffix('.Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX')).') + id length('.Tools::strlen($results).') cannot be grather then 9';
+        if (!$this->_errors) {
+            if ($count + Tools::getValue('THCUSTOMREF_DIGITS_NUMBER') > 9) {
+                $this->_errors[] = 'Prefix ('.Tools::strlen(Tools::getValue('THCUSTOMREF_PREFIX')).') + suffix ('.Tools::strlen(Tools::getValue('THCUSTOMREF_SUFFIX')).') + number of digits ('.Tools::getValue('THCUSTOMREF_DIGITS_NUMBER').') cannot be grather then 9';
+            }
         }
-
-        if (Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER') && ($results >= Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER'))) {
-            $this->_errors[] = 'Next increment number cannot be lower or equal then last order id: '. $results;
-        }
+        // de facut update in timp real la next increment number
+        // de verificat next increment number cand este null si exista hidden
 
         if (!$this->_errors) {
             foreach (array_keys($form_values) as $key) {
                 if ($key == 'THCUSTOMREF_DIGITS_NUMBER') {
                     if (!Validate::isInt(Tools::getValue($key)) || Tools::getValue($key) > 5) {
                         $this->_errors[] = 'Number of digits value it\'s not ok';
-                        $update_value = 0;
-                    }
-                } elseif ($key == 'THCUSTOMREF_NEXT_INCREMENT_NUMBER') {
-                    if (!empty(Tools::getValue($key)) && !Validate::isInt(Tools::getValue($key))) {
-                        $this->_errors[] = 'Next increment number value it\'s not ok';
                         $update_value = 0;
                     }
                 } elseif ($key == 'THCUSTOMREF_SUFFIX') {
@@ -329,9 +346,17 @@ class Thcustomref extends Module
                         $this->_errors[] = 'Prefix cannot be empty while it is enabled';
                         $update_value = 0;
                     }
+                } else if ($key == 'THCUSTOMREF_NUMBER_TO_USE' && Tools::getValue('THCUSTOMREF_NUMBER_TO_USE') == 1) {
+                    if (!Validate::isInt(Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER')) || Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER') <= Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN')) {
+                        $this->_errors[] = 'Next increment number value can\'t be lower or equal than '.Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
+                        $update_value = 0;
+                    }
                 }
 
                 if ($update_value) {
+                    if ($key == 'THCUSTOMREF_NUMBER_TO_USE' && Tools::getValue('THCUSTOMREF_NUMBER_TO_USE') == 1) {
+                        Configuration::updateValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN', Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER'));
+                    }
                     Configuration::updateValue($key, Tools::getValue($key));
                 }
             }
