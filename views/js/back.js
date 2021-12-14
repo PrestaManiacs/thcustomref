@@ -30,9 +30,11 @@ $(document).ready(function() {
         let val = $THCUSTOMREF_NUMBER_TO_USE.val();
         if (val  == 0) {
             $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_NEXT_INCREMENT_NUMBER').closest('.form-group').hide();
+            $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_INCREMENT_SIZE').closest('.form-group').hide();
             handlePreview(0);
         } else if (val  == 1) {
             $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_NEXT_INCREMENT_NUMBER').closest('.form-group').show();
+            $THCUSTOMREF_NUMBER_TO_USE.closest('form').find('#THCUSTOMREF_INCREMENT_SIZE').closest('.form-group').show();
             handlePreview(1);
         }
     }
@@ -48,6 +50,10 @@ $(document).ready(function() {
                 NUMBER = val;
             } else {
                 NUMBER = $select_obj.closest('.form-group').find('p').text().replace('Current number: ', '').trim();
+            }
+            let increment_size = $('#THCUSTOMREF_INCREMENT_SIZE').val();
+            if (increment_size.length) {
+                NUMBER = parseInt(NUMBER) + parseInt(increment_size);
             }
         } else {
             NUMBER = THCUSTOMREF_LAST_ID_ORDER;

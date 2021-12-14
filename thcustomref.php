@@ -26,7 +26,7 @@ class Thcustomref extends Module
     {
         $this->name = 'thcustomref';
         $this->tab = 'administration';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'Presta Maniacs';
         $this->need_instance = 0;
 
@@ -52,6 +52,8 @@ class Thcustomref extends Module
         if (!parent::install() || !$this->registerHooks()) {
             return false;
         }
+
+        Configuration::updateValue('THCUSTOMREF_INCREMENT_SIZE', 1);
 
         return  true;
     }
@@ -217,6 +219,13 @@ class Thcustomref extends Module
                         !Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN') ? : 'desc' => $this->l('Current number: '.Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN'))
                     ),
                     array(
+                        'type' => 'text',
+                        'label' => $this->l('Increment size'),
+                        'name' => 'THCUSTOMREF_INCREMENT_SIZE',
+                        'col' => 2,
+                        'class' => 'fixed-width-xl',
+                    ),
+                    array(
                         'type' => 'th_sub_title',
                         'name' => 'Prefix',
                     ),
@@ -298,6 +307,7 @@ class Thcustomref extends Module
             'THCUSTOMREF_DIGITS_NUMBER' => Tools::getValue('THCUSTOMREF_DIGITS_NUMBER', Configuration::get('THCUSTOMREF_DIGITS_NUMBER')),
             'THCUSTOMREF_NEXT_INCREMENT_NUMBER' => Tools::getValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER', Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER')),
             'THCUSTOMREF_NUMBER_TO_USE' => Tools::getValue('THCUSTOMREF_NUMBER_TO_USE', Configuration::get('THCUSTOMREF_NUMBER_TO_USE')),
+            'THCUSTOMREF_INCREMENT_SIZE' => Tools::getValue('THCUSTOMREF_INCREMENT_SIZE', Configuration::get('THCUSTOMREF_INCREMENT_SIZE')),
         );
     }
 
@@ -357,6 +367,11 @@ class Thcustomref extends Module
                 } elseif ($key == 'THCUSTOMREF_NEXT_INCREMENT_NUMBER') {
                     if ($nr && $last_order_id >= $nr) {
                         $this->_errors[] = 'Next increment number value can\'t be lower or equal than last order id: '.$last_order_id;
+                        $update_value = 0;
+                    }
+                } elseif ($key == 'THCUSTOMREF_INCREMENT_SIZE') {
+                    if ($nr_to_use && (!Validate::isInt(Tools::getValue($key)) || Tools::getValue($key) < 1)) {
+                        $this->_errors[] = 'Increment size value can\'t be lower then 1!';
                         $update_value = 0;
                     }
                 }

@@ -33,13 +33,14 @@ class Order extends OrderCore
                 if (Configuration::get('THCUSTOMREF_NUMBER_TO_USE')) {
                     $number_hidden = Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN');
                     if ($number_hidden > $number) {
-                        $number = $number_hidden;
-                        Configuration::updateValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN', $number_hidden + 1);
+                        $value = (int)Configuration::get('THCUSTOMREF_INCREMENT_SIZE');
+                        $number = $number_hidden + $value;
+                        Configuration::updateValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER_HIDDEN', $number);
                     }
-                }
 
-                if (Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER')) {
-                    Configuration::updateValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER', null);
+                    if (Configuration::get('THCUSTOMREF_NEXT_INCREMENT_NUMBER')) {
+                        Configuration::updateValue('THCUSTOMREF_NEXT_INCREMENT_NUMBER', null);
+                    }
                 }
 
                 $output .= sprintf('%0' . Configuration::get('THCUSTOMREF_DIGITS_NUMBER') . 'd', $number);
